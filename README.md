@@ -1,0 +1,2 @@
+# PointLocationCalculator
+Тестовое задание
