@@ -1,8 +1,13 @@
-﻿using PL_Calculator.Models;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using Microsoft.Win32;
+using PL_Calculator.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -70,13 +75,74 @@ namespace PL_Calculator.View_Models
             get { return _tracingLines; }
             set { _tracingLines = value; }
         }
+        private int _accuracy;
+        public int Accuracy
+        {
+            get { return _accuracy; }
+            set
+            {
+                _accuracy = value;
+                OnPropertyChanged("Accuracy");
+            }
+        }
         #endregion
         public MainWindowVM()
         {
             PolygonPoints = new();
             TracingLines = new();
+            Accuracy = 4;
         }
         #region Commands
+        private ICommand _increaseAccuracyCommand;
+        public ICommand IncreaseAccuracyCommand =>
+            _increaseAccuracyCommand ??= new RelayCommand((param) => Accuracy++);
+        private ICommand _decreaseAccuracyCommand;
+        public ICommand DecreaseAccuracyCommand =>
+            _decreaseAccuracyCommand ??= new RelayCommand((param) => Accuracy--, (param) =>
+             {
+                 if (Accuracy <= 4)
+                     return false;
+                 return true;
+             });
+        private ICommand _importFileCommand;
+        public ICommand ImportFileCommand =>
+            _importFileCommand ??= new RelayCommand((param) =>
+            {
+                string path = ShowFileDialog("Выберите файл для импорта");
+                if (String.IsNullOrEmpty(path))
+                    return;
+                CsvConfiguration csvConfiguration = new(CultureInfo.InvariantCulture)
+                {
+                    Encoding = Encoding.UTF8,
+                    Delimiter = ","
+                };
+                using (FileStream fs = File.Open(path, FileMode.Open))
+                {
+                    StreamReader sr = new(fs, Encoding.UTF8);
+                    using (CsvReader csv = new(sr, csvConfiguration))
+                    {
+                        try
+                        {
+                            var data = csv.GetRecords<Point>();
+                            PolygonPoints.Clear();
+                            foreach (Point point in data)
+                            {
+                                PolygonPoints.Add(point);
+                            }
+                            MessageBox.Show("Импорт произошел успешно!", "Сообщение",
+                                MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        catch
+                        {
+                            MessageBox.Show("Файл содержит неверный формат данных", "Ошибка",
+                                 MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+
+                    }
+                    sr.Close();
+                }
+                OnPropertyChanged("PolygonPoints");
+            });
         private ICommand _clearCanvasCommand;
         public ICommand ClearCanvasCommand =>
             _clearCanvasCommand ??= new RelayCommand((param) =>
@@ -118,7 +184,8 @@ namespace PL_Calculator.View_Models
                 //Есть шанс, что мы попадем вектором в точку пересечения граней
                 //Таким образом, мы исключаем такую возможность
                 if (PolygonPoints.Count < 3)
-                    MessageBox.Show("Точка снаружи", "Сообщение");
+                    MessageBox.Show("Точка снаружи", "Сообщение",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
                 else
                 {
                     Point testPoint = new(double.Parse(XTestPointInput), double.Parse(YTestPointInput));
@@ -151,11 +218,54 @@ namespace PL_Calculator.View_Models
                         X2 = 0,
                         Y2 = 1000
                     });
+                    int amountExtraTracingLines = Accuracy - 4;
+                    if (amountExtraTracingLines > 0)
+                    {
+                        for (int i = 0; i < amountExtraTracingLines; i++)
+                        {
+                            Random random = new Random();
+                            int axisOrientation = random.Next(1, 5);
+                            if (axisOrientation == 1)
+                                TracingLines.Add(new Line
+                                {
+                                    X1 = testPoint.X,
+                                    Y1 = testPoint.Y,
+                                    X2 = random.Next(0, 1000),
+                                    Y2 = 1000
+                                });
+                            else if (axisOrientation == 2)
+                                TracingLines.Add(new Line
+                                {
+                                    X1 = testPoint.X,
+                                    Y1 = testPoint.Y,
+                                    X2 = 1000,
+                                    Y2 = random.Next(0, 1000)
+                                });
+                            else if (axisOrientation == 3)
+                                TracingLines.Add(new Line
+                                {
+                                    X1 = testPoint.X,
+                                    Y1 = testPoint.Y,
+                                    X2 = 0,
+                                    Y2 = random.Next(0, 1000)
+                                });
+                            else
+                                TracingLines.Add(new Line
+                                {
+                                    X1 = testPoint.X,
+                                    Y1 = testPoint.Y,
+                                    X2 = random.Next(0, 1000),
+                                    Y2 = 0
+                                });
+                        }
+                    }
                     OnPropertyChanged("TracingLines");
                     if (CheckLocationPoint())
-                        MessageBox.Show("Точка внутри", "Сообщение");
+                        MessageBox.Show("Точка внутри", "Сообщение",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
                     else
-                        MessageBox.Show("Точка снаружи", "Сообщение");
+                        MessageBox.Show("Точка снаружи", "Сообщение",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }, (param) =>
             {
@@ -323,6 +433,22 @@ namespace PL_Calculator.View_Models
                 return false;
             else
                 return true;
+        }
+        private static string ShowFileDialog(string title)
+        {
+            OpenFileDialog fileDialog = new()
+            {
+                DefaultExt = "*.csv",
+                AddExtension = true,
+                Filter = ".csv (*.csv) | *.csv",
+                CheckFileExists = true,
+                CheckPathExists = true,
+                Title = title
+            };
+            if (fileDialog.ShowDialog() == false)
+                return string.Empty;
+
+            return fileDialog.FileName;
         }
         private static bool IsCoordinatesValid(string x, string y)
         {
