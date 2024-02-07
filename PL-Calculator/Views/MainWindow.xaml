@@ -8,6 +8,7 @@
         xmlns:converters="clr-namespace:PL_Calculator.Converters"
         xmlns:vm="clr-namespace:PL_Calculator.View_Models"
         mc:Ignorable="d" MinHeight="420" MinWidth="480"
+        WindowState="Maximized"
         Title="Главное окно" Height="450" Width="800">
     <Window.Resources>
         <ResourceDictionary>
@@ -15,7 +16,7 @@
                 <ResourceDictionary>
                     <converters:PlaceholderVisibilityConverter x:Key="PlaceholderConverter"/>
                     <converters:PolygonPointsConverter x:Key="PointsConverter"/>
-                    <converters:TestPointInputTypeConverter x:Key="TestPointInputTypeConverter"/>
+                    <converters:PointInputTypeConverter x:Key="PointInputTypeConverter"/>
                     <converters:TestPointVisibilityConverter x:Key="TestPointVisibilityConverter"/>
                 </ResourceDictionary>
                 <ResourceDictionary Source="/Styles/MainWindowStyle.xaml"/>
@@ -40,10 +41,11 @@
         <!--#endregion-->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="0.3*"/>
+                <ColumnDefinition Width="0.245*"/>
                 <ColumnDefinition/>
-                <ColumnDefinition Width="0.3*"/>
+                <ColumnDefinition Width="0.245*"/>
             </Grid.ColumnDefinitions>
+        <!--#region Left panel-->
             <StackPanel Grid.Row="1" Margin="10">
                 <StackPanel>
                     <TextBlock Text="Введите координаты точки многоугольника:"/>
@@ -82,30 +84,121 @@
                             <TextBox Text="{Binding YTestPointInput, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                     </Grid>
-                    <Button Content="Рассчитать" Command="{Binding AddTestPointCommand}"/>
+                    <Button Content="Проверить" Command="{Binding CheckLocationStatus}"/>
                 </StackPanel>
+                <CheckBox FontSize="14" Margin="0 5 0 0" x:Name="tracingOption">
+                    <CheckBox.Content>
+                        <TextBlock Text="Отобразить трассировку" FontSize="14" TextWrapping="WrapWithOverflow"/>
+                    </CheckBox.Content>
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Checked">
+                            <i:ChangePropertyAction TargetObject="{Binding ElementName=tracersList}" PropertyName="Visibility" Value="Visible"/>
+                        </i:EventTrigger>
+                        <i:EventTrigger EventName="Unchecked">
+                            <i:ChangePropertyAction TargetObject="{Binding ElementName=tracersList}" PropertyName="Visibility" Value="Hidden"/>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </CheckBox>
             </StackPanel>
-            <Border Grid.Column="1" Grid.Row="1" Margin="10" BorderBrush="Black" BorderThickness="1">
-                <Canvas Background="Transparent" ClipToBounds="True">
-                    <Polygon Margin="10" Stroke="Black" StrokeThickness="3" Fill="LightGray"
+            <!--#endregion-->
+            <Grid Grid.Column="1" Grid.Row="1" Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <!--#region Coordinates X and Y-->
+                <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                    <Label Content="X" Style="{StaticResource coordinateText}"/>
+                    <Line X1="0" Y1="0" X2="15" Y2="0" Style="{StaticResource xCoordinateLine}"/>
+                    <Label Content="50" Style="{StaticResource coordinateText}"/>
+                    <Line X1="0" Y1="0" X2="15" Y2="0" Style="{StaticResource xCoordinateLine}"/>
+                    <Label Content="100" Style="{StaticResource coordinateText}"/>
+                    <Line X1="0" Y1="0" X2="59" Y2="0" Style="{StaticResource xCoordinateLine}"/>
+                    <Label Content="200" Style="{StaticResource coordinateText}"/>
+                    <Line X1="0" Y1="0" X2="159" Y2="0" Style="{StaticResource xCoordinateLine}"/>
+                    <Label Content="400" Style="{StaticResource coordinateText}"/>
+                    <Line X1="0" Y1="0" X2="360" Y2="0" Style="{StaticResource xCoordinateLine}"/>
+                    <Label Content="800" Style="{StaticResource coordinateText}"/>
+                    <Line X1="0" Y1="0" X2="30" Y2="0" Style="{StaticResource xCoordinateLine}"/>
+                    <Polyline Points="5 10 15 5 5 0" Stroke="Black" StrokeThickness="2" VerticalAlignment="Center" Opacity="0.5"/>
+                </StackPanel>
+                <StackPanel Grid.Column="0" Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                    <Polyline Points="10 -5 5 -15 0 -5" Stroke="Black" StrokeThickness="2" HorizontalAlignment="Center" Opacity="0.5"/>
+                    <Line X1="0" Y1="0" X2="0" Y2="250" Style="{StaticResource yCoordinateLine}"/>
+                    <Label Content="400" Style="{StaticResource yCoordinateText}"/>
+                    <Line X1="0" Y1="0" X2="0" Y2="170" Style="{StaticResource yCoordinateLine}"/>
+                    <Label Content="200" Style="{StaticResource yCoordinateText}"/>
+                    <Line X1="0" Y1="0" X2="0" Y2="70" Style="{StaticResource yCoordinateLine}"/>
+                    <Label Content="100" Style="{StaticResource yCoordinateText}"/>
+                    <Line X1="0" Y1="0" X2="0" Y2="19" Style="{StaticResource yCoordinateLine}"/>
+                    <Label Content="50" Style="{StaticResource yCoordinateText}"/>
+                    <Line X1="0" Y1="0" X2="0" Y2="9" Style="{StaticResource yCoordinateLine}"/>
+                    <Label Content="Y" Style="{StaticResource yCoordinateText}"/>
+                </StackPanel>
+                <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Center" Content="0" Style="{StaticResource coordinateText}"/>
+                <!--#endregion-->
+                <Border Grid.Column="1" Grid.Row="0" BorderBrush="Black" BorderThickness="1">
+                    <Canvas Background="Transparent" ClipToBounds="False" RenderTransformOrigin="0.5, 0.5" x:Name="mainCanvas">
+                        <Canvas.RenderTransform>
+                            <ScaleTransform ScaleY="-1"/>
+                        </Canvas.RenderTransform>
+                        <Polygon Stroke="Black" StrokeThickness="2" Fill="LightGray"
                              Points="{Binding PolygonPoints, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource PointsConverter}}"/>
-                    <Ellipse Height="6" Width="6" Fill="Red"
-                             Canvas.Top="{Binding YTestPointInput, Converter={StaticResource TestPointInputTypeConverter}}"
-                             Canvas.Left="{Binding XTestPointInput, Converter={StaticResource TestPointInputTypeConverter}}">
-                        <Ellipse.Visibility>
-                            <MultiBinding Converter="{StaticResource TestPointVisibilityConverter}" UpdateSourceTrigger="PropertyChanged">
-                                <Binding RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}" Path="DataContext.XTestPointInput"/>
-                                <Binding RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}" Path="DataContext.YTestPointInput"/>
-                            </MultiBinding>
-                        </Ellipse.Visibility>
-                    </Ellipse>
-                    <Canvas.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="Очистить" Command="{Binding ClearCanvasCommand}"/>
-                        </ContextMenu>
-                    </Canvas.ContextMenu>
-                </Canvas>
-            </Border>
+                        <!--#region Tracing lines-->
+                        <ListBox ItemsSource="{Binding TracingLines, UpdateSourceTrigger=PropertyChanged}" 
+                                 Height="{Binding ElementName=mainCanvas, Path=ActualHeight}"
+                                 Width="{Binding ElementName=mainCanvas, Path=ActualWidth}" 
+                                 x:Name="tracersList" Background="Transparent" Visibility="Hidden">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Line X1="{Binding X1}" Y1="{Binding Y1}"
+                                          X2="{Binding X2}" Y2="{Binding Y2}"
+                                          Stroke="Green" StrokeThickness="1.5">
+                                    </Line>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <ContentPresenter/>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                        </ListBox>
+                        <!--#endregion-->
+                        <!--#region Test point-->
+                        <Ellipse Height="5" Width="5" Fill="Red"
+                             Canvas.Top="{Binding YTestPointInput, Converter={StaticResource PointInputTypeConverter}}"
+                             Canvas.Left="{Binding XTestPointInput, Converter={StaticResource PointInputTypeConverter}}">
+                            <Ellipse.Visibility>
+                                <MultiBinding Converter="{StaticResource TestPointVisibilityConverter}" UpdateSourceTrigger="PropertyChanged">
+                                    <Binding RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}" Path="DataContext.XTestPointInput"/>
+                                    <Binding RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}" Path="DataContext.YTestPointInput"/>
+                                </MultiBinding>
+                            </Ellipse.Visibility>
+                        </Ellipse>
+                        <!--#endregion-->
+                        <Canvas.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Очистить" Command="{Binding ClearCanvasCommand}"/>
+                            </ContextMenu>
+                        </Canvas.ContextMenu>
+                    </Canvas>
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </Window>
