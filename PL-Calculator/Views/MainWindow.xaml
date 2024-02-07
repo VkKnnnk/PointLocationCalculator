@@ -34,9 +34,9 @@
         <!--#region Menu-->
         <Menu Grid.ColumnSpan="2">
             <MenuItem Header="Импорт" FontSize="16">
-                <MenuItem Header="Выбрать файл" Cursor="Hand"/>
+                <MenuItem Header="Выбрать файл" Cursor="Hand" Command="{Binding ImportFileCommand}"/>
             </MenuItem>
-            <MenuItem Header="Экспорт" FontSize="16"/>
+            <MenuItem Header="Экспорт" FontSize="16" IsEnabled="False" />
         </Menu>
         <!--#endregion-->
         <Grid Grid.Row="1">
@@ -45,7 +45,7 @@
                 <ColumnDefinition/>
                 <ColumnDefinition Width="0.245*"/>
             </Grid.ColumnDefinitions>
-        <!--#region Left panel-->
+            <!--#region Left panel-->
             <StackPanel Grid.Row="1" Margin="10">
                 <StackPanel>
                     <TextBlock Text="Введите координаты точки многоугольника:"/>
@@ -55,7 +55,7 @@
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Grid Grid.Column="0">
-                            <TextBox Style="{StaticResource placeHolder}" Text="X:"
+                            <TextBox Style="{StaticResource placeHolder}" Text="X:" x:Name="polygonXTextbox"
                                        Visibility="{Binding XPolygonPointInput, Converter={StaticResource PlaceholderConverter}}"/>
                             <TextBox Text="{Binding XPolygonPointInput, UpdateSourceTrigger=PropertyChanged}" />
                         </Grid>
@@ -99,6 +99,17 @@
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
                 </CheckBox>
+                <TextBlock Margin="0 15 0 0" Text="Точность расчетов:"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Button Content="-" Command="{Binding DecreaseAccuracyCommand}"/>
+                    <Label Grid.Column="1" Content="{Binding Accuracy}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button Grid.Column="2" Content="+" Command="{Binding IncreaseAccuracyCommand}"/>
+                </Grid>
             </StackPanel>
             <!--#endregion-->
             <Grid Grid.Column="1" Grid.Row="1" Margin="5">
@@ -157,7 +168,7 @@
                                 <DataTemplate>
                                     <Line X1="{Binding X1}" Y1="{Binding Y1}"
                                           X2="{Binding X2}" Y2="{Binding Y2}"
-                                          Stroke="Green" StrokeThickness="1.5">
+                                          Stroke="Green" StrokeThickness="1.5" Opacity="0.5">
                                     </Line>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
